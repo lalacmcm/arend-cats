@@ -1,0 +1,11 @@
+
+\class Category {
+  | Ob : \Type
+  | Hom : \Pi (source target : Ob) -> \Set
+  | comp \alias \infixr 8 ∘ : \Pi {x y z : Ob} (g : Hom y z) (f : Hom x y) -> Hom x z
+  | id : \Pi {x : Ob} -> Hom x x
+
+  | comp-id-left : \Pi {x y : Ob} {f : Hom x y} -> id ∘ f = f
+  | comp-id-right : \Pi {x y : Ob} {f : Hom x y} -> f ∘ id = f
+  | comp-assoc : \Pi {x y z w : Ob} {f : Hom x y} {g : Hom y z} {h : Hom z w} -> h ∘ (g ∘ f) = (h ∘ g) ∘ f
+}
