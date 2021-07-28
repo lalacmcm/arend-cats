@@ -2,7 +2,9 @@
 \import Data.Bool
 \import Function.Meta
 \import Logic
+\import Logic.Meta
 \import Paths.Meta
+\import Paths
 \open Nat
 
 \class Category (Ob : \Type) {
@@ -14,6 +16,15 @@
   | comp-id-right : \Pi {x y : Ob} {f : Hom x y} -> f ∘ id = f
   | comp-assoc : \Pi {x y z w : Ob} {f : Hom x y} {g : Hom y z} {h : Hom z w} -> h ∘ (g ∘ f) = (h ∘ g) ∘ f
 }
+
+\func Op (C : Category) : Category \cowith
+  | Ob => C.Ob
+  | Hom => \lam source target => C.Hom target source
+  | comp => \lam g f => f ∘ g
+  | id => C.id
+  | comp-id-left => C.comp-id-right
+  | comp-id-right => C.comp-id-left
+  | comp-assoc => inv C.comp-assoc
 
 \class Preorder' (A : \Type) {
   | \infix 4 <== : A -> A -> \Prop
@@ -50,21 +61,26 @@
 
 \instance NatLECat : Category Nat => preorder-is-category NatLE'
 
-\class Functor (C D : Category) (\classifying F0 : C.Ob -> D.Ob) {
-  | F1 {x y : C.Ob} (Hom x y) : Hom (F0 x) (F0 y)
+\class Functor (C D : Category) {
+  | \classifying omap : C.Ob -> D.Ob
+  | fmap {x y : C.Ob} (Hom x y) : Hom (omap x) (omap y)
 
-  | id-proof {x : C.Ob} : F1 (C.id {x}) = D.id {F0 x}
-  | comp-proof {x y z : C.Ob} {f : C.Hom x y} {g : C.Hom y z} : F1 (g ∘ f) = F1 g ∘ F1 f
+  | id-proof {x : C.Ob} : fmap (C.id {x}) = D.id {omap x}
+  | comp-proof {x y z : C.Ob} {f : C.Hom x y} {g : C.Hom y z} : fmap (g ∘ f) = fmap g ∘ fmap f
 }
-
-\data Option (T : \Type)
-  | Some T
-  | None
 
 \data Unit
   | I
 
-\instance ConstCat : Category Unit
+\instance EmptyCat : Category Empty
+  | Hom => \lam source _ => absurd source
+  | comp => \lam g f => f
+  | id => contradiction
+  | comp-id-left => idp
+  | comp-id-right => contradiction
+  | comp-assoc => idp
+
+\instance UnitCat : Category Unit
   | Hom => \lam _ _ => Unit
   | comp => \lam _ _ => I
   | id => I
@@ -78,50 +94,49 @@
     | I, p => rewrite p idp
   }
 
-\func Id {C : Category} : Functor C C \cowith
-  | F0 x => x
-  | F1 h => h
+\func IdFunctor {C : Category} : Functor C C \cowith
+  | omap x => x
+  | fmap h => h
   | comp-proof => idp
   | id-proof => idp
 
-\data State (S A : \Set)
-  | state (S -> \Sigma S A)
+\class NaturalTransformation {C D : Category} (F G : Functor C D) {
+  | component : \Pi (x : C.Ob) -> Hom (F x) (G x)
+  | naturality : \Pi (x y : C.Ob) (f : Hom x y) -> component y ∘ fmap f = fmap f ∘ component x
+}
 
-\record State' (S A : \Set)
-  | runState : S -> \Sigma S A
+-- C = two parallel arrows between objects s t
+-- construct [C; Set], it will be the same as graph
 
--- \lam a => f a === f
--- (p.1,p.2) === p
+\instance FunctorCategory (C D : Category) : Category
+  | Ob => Functor C D
+  | Hom => NaturalTransformation
+  | comp => \lam alpha beta => \new NaturalTransformation {
+    | component  => \lam t => (component {alpha} t) ∘ (component {beta} t)
+    | naturality => {?}
+  }
+  | id => \new NaturalTransformation {
+    | component => \lam t => id
+    | naturality => {?}
+  }
+  | comp-id-left => {?}
+  | comp-id-right => {?}
+  | comp-assoc => {?}
 
-\record R
-  | a : Nat
-  | b : Nat
+\instance SetCat : Category
+  | Ob => \Set
+  | Hom => \lam source target => source -> target
+  | comp => \lam f g => \lam x => f $ g x
+  | id => \lam x => x
+  | comp-id-left => idp
+  | comp-id-right => idp
+  | comp-assoc => ext (\lam x => idp)
 
-\data Pair (A : \Type)
-  | pair A A
+\func PreSheaf (C : Category) : Category
+  => FunctorCategory (Op C) SetCat
 
--- \new R p.a p.b === p
-
-\func IdFunctor (C : Category) : Functor C C \cowith
-  | F0 x => x
-  | F1 {x} {y} h => h
-  | comp-proof => {?}
+\instance HomFunctor {C : Category} (x : C.Ob) : Functor C SetCat
+  | omap => {?}
+  | fmap => {?}
   | id-proof => {?}
-
-\func StateFunctor (C : Category) : Functor C C \cowith
-  | F0 x => x
-  | F1 {x} {y} h => h
   | comp-proof => {?}
-  | id-proof => {?}
-
---\instance UnitFunctor : Functor ConstCat ConstCat
---  | F0 x => x
---  | F1 {x} {y} h => {?}
---  | comp-proof => {?}
---  | id-proof => {?}
-
---\instance UnitFunctor' (C : Category) : Functor C ConstCat
---  | F0 _ => I
---  | F1 {x} {y} h => h
---  | comp-proof => {?}
---  | id-proof => {?}

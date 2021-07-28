@@ -1,0 +1,111 @@
+\import Function.Meta
+\import Logic.Meta
+\import Meta
+\import Paths.Meta
+\import Paths
+\import Data.Bool
+\open Nat
+
+-- They're all useful and independent from K:
+-- Prop trunc
+-- quotients
+-- propext
+
+-- "subsets"
+\func sep {A : \Type} (B : A -> \Type) : \Type => \Sigma (x : A) (B x)
+
+-- \func sep' {A : \Type} (B : A -> \Prop) : \Type => \Sigma (x : A) (B x)
+
+\func isInj {A B : \Type} (f : A -> B) => \Pi {a a' : A} (p : f a = f a') -> a = a'
+
+\func sep-isInj {A : \Type} (B : A -> \Type) (q : \Pi (x : A) -> \Pi (b b' : B x) -> b = b')
+  : isInj ((\lam (p : \Sigma (x : A) (B x)) => p.1) : sep {A} B -> A)
+  => unfold isInj (\lam {a} {a'} p => ext (p, q _ _ _))
+
+\func depFunExt
+  {A : \Type}
+  {B : A -> \Type}
+  (f g : \Pi (x : A) -> B x)
+  (p : \Pi (x : A) -> f x = g x)
+  : f = g
+  => path (\lam i x => p x @ i)
+
+\func funExt {A B : \Type} (f g : A -> B) (p : \Pi (x : A) -> f x = g x) : f = g
+  => depFunExt {A} {\lam _ => B} f g p
+
+\func propExt {P Q : \Prop} (f : P -> Q) (g : Q -> P) : P = Q
+  => ext (f, g)
+
+\data Or (A B : \Type)
+  | inl A
+  | inr B
+
+\func isProp (X : \Type) => \Pi (x x' : X) -> x = x'
+
+\truncated \data Trunc (A : \Type) : \Prop
+  | trunc A
+
+\lemma Trunc-rec {A B : \Type} (p : isProp B) (f : A -> B) (ta : Trunc A) : B \elim ta
+  | trunc a => f a
+
+\lemma Trunc-rec' {A : \Type} {B : \Prop} (f : A -> B) (ta : Trunc A) : B \elim ta
+  | trunc a => f a
+
+\sfunc Trunc-rec'' {A B : \Type} (p : Nat -> isProp B) (f : A -> B) (ta : Trunc A) : B \level p 0 \elim ta
+  | trunc a => f a
+
+\func gooof (x : Nat) : Trunc ((x mod 2 = 0) `Or` (x mod 2 = 1)) \elim x
+  | 0 => trunc $ inl idp
+  | suc x => {?}
+
+-- \func Exists {A : \Type} (B : A -> \Type) => Trunc (\Sigma (x : A) (B x))
+
+\func image {A B : \Type} (f : A -> B)
+    => \Sigma (b : B) (∃ (a : A) (f a = b))
+--  => \Sigma (b : B) (Exists {A} (\lam a => f a = b))
+
+-- \func Prop => \Sigma (A : \Type) (isProp A)
+
+--  A : \Prop
+-- -----------
+--  A : \Type
+
+--  A : \Prop
+-- -----------
+--  A : \Type
+
+-- \func hoof (P : Nat -> Bool) (p : ∃ (x : Nat) (P x = true))
+--   : \Sigma (x : Nat) (P x = true) (\Pi (y : Nat) -> P y = true -> x <= y)
+--   \level {?}
+--   \elim p
+--   | trunc (x, p) => {?}
+
+-- compatible with univalence!
+\func AC {A : \Type} (B : A -> \Type) (p : \Pi (x : A) -> Trunc (B x)) : Trunc (\Pi (x : A) -> B x) => {?}
+
+-- this one is stronger than truncated version, and doesn't use choice
+\func countable {A : \Type} (q : A = Nat) {B : A -> \Type} (p : \Pi (x : A) -> B x = Nat)
+  : (\Sigma (x : A) (B x)) = Nat
+  => {?}
+
+-- needs choice
+\func countable' {A : \Type} (q : A = Nat) {B : A -> \Type} (p : \Pi (x : A) -> Trunc (B x = Nat))
+  : Trunc ((\Sigma (x : A) (B x)) = Nat)
+  => {?}
+
+-- impossible to construct even with AC
+\func countable'' {A : \Type} (q : A = Nat) {B : A -> \Type} (p : \Pi (x : A) -> Trunc (B x = Nat))
+  : (\Sigma (x : A) (B x)) = Nat
+  => {?}
+
+\data Quot (A : \Type) (R : A -> A -> \Prop)
+
+\func Jl {A : \Type}  {a : A} (B : \Pi (a' : A) -> a = a' -> \Type)
+  (b : B a idp) {a' : A} (p : a = a') : B a' p \elim p
+  | idp => b
+
+\func Jl' {A : \Type} {a : A} (B : (\Sigma (a' : A) (a = a')) -> \Type)
+  (b : B (a, idp)) (p : \Sigma (a' : A) (a = a')) : B p
+  => {?} -- Jl (\lam a' p => B (a', p)) p.2
+
+\func BREAK : Nat => coe (\lam i => iso {Nat} {Nat} (\lam x => x) (\lam x => x) (\lam _ => idp) (\lam _ => idp) (inv (path (\lam j => j)) @ i)) 0 right
