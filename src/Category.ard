@@ -51,10 +51,10 @@
 \instance NatLECat : Category Nat => preorder-is-category NatLE'
 
 \class Functor (C D : Category) (\classifying F0 : C.Ob -> D.Ob) {
-  | F1 : \Pi {x y : C.Ob} -> Hom x y -> Hom (F0 x) (F0 y)
+  | F1 {x y : C.Ob} (Hom x y) : Hom (F0 x) (F0 y)
 
-  | comp-proof : \Pi {x y z : C.Ob} {f : C.Hom x y} {g : C.Hom y z} -> F1 (g ∘ f) -> F1 g ∘ F1 f
-  | id-proof : \Pi {x : C.Ob} -> F1 x C.id -> D.id (F0 x)
+  | id-proof {x : C.Ob} : F1 (C.id {x}) = D.id {F0 x}
+  | comp-proof {x y z : C.Ob} {f : C.Hom x y} {g : C.Hom y z} : F1 (g ∘ f) = F1 g ∘ F1 f
 }
 
 \data Option (T : \Type)
@@ -78,8 +78,50 @@
     | I, p => rewrite p idp
   }
 
-\instance UnitFunctor (C : Category) : Functor C Unit
-  | F0 => {?}
-  | F1 => {?}
+\func Id {C : Category} : Functor C C \cowith
+  | F0 x => x
+  | F1 h => h
+  | comp-proof => idp
+  | id-proof => idp
+
+\data State (S A : \Set)
+  | state (S -> \Sigma S A)
+
+\record State' (S A : \Set)
+  | runState : S -> \Sigma S A
+
+-- \lam a => f a === f
+-- (p.1,p.2) === p
+
+\record R
+  | a : Nat
+  | b : Nat
+
+\data Pair (A : \Type)
+  | pair A A
+
+-- \new R p.a p.b === p
+
+\func IdFunctor (C : Category) : Functor C C \cowith
+  | F0 x => x
+  | F1 {x} {y} h => h
   | comp-proof => {?}
   | id-proof => {?}
+
+\func StateFunctor (C : Category) : Functor C C \cowith
+  | F0 x => x
+  | F1 {x} {y} h => h
+  | comp-proof => {?}
+  | id-proof => {?}
+
+--\instance UnitFunctor : Functor ConstCat ConstCat
+--  | F0 x => x
+--  | F1 {x} {y} h => {?}
+--  | comp-proof => {?}
+--  | id-proof => {?}
+
+--\instance UnitFunctor' (C : Category) : Functor C ConstCat
+--  | F0 _ => I
+--  | F1 {x} {y} h => h
+--  | comp-proof => {?}
+--  | id-proof => {?}
