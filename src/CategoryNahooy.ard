@@ -1,8 +1,10 @@
 \import Arith.Nat
 \import Data.Bool
+\import Debug.Meta
 \import Function.Meta
 \import Logic
 \import Logic.Meta
+\import Meta (run)
 \import Paths.Meta
 \import Paths
 \open Nat
@@ -26,16 +28,28 @@
   | comp-id-right => C.comp-id-left
   | comp-assoc => inv C.comp-assoc
 
+\func DoubleOP (C : Category) : Op (Op C) = C => idp
+
 \class Preorder' (A : \Type) {
   | \infix 4 <== : A -> A -> \Prop
   | leq-refl : \Pi {x : A} -> x <== x
-  | leq-trans : \Pi {x y z : A} -> x <== y -> y <== z -> x <== z
+  | leq-trans \alias \infixr 7 ∧ : \Pi {x y z : A} -> x <== y -> y <== z -> x <== z
+
+
+
+  | leq-id-left : \Pi {x y : A} (p : x <== y) -> p = leq-refl ∧ p
+  | leq-id-right : \Pi {x y : A} (p : x <== y) -> p = p ∧ leq-refl
 }
 
 \instance NatLE' : Preorder' Nat
   | <== => <=
   | leq-refl => NatLE.<=-reflexive
   | leq-trans => NatLE.<=-transitive
+  | leq-id-left {x y : Nat} (p : x <= y) : p = NatLE.<=-transitive NatLE.<=-reflexive p \elim x, y, p {
+    | 0    , m    , zero<=_    => {?}
+    | suc n, suc m, suc<=suc p => \let zz => leq-id-left {n} {m} p \in {?}
+  }
+  | leq-id-right => {?}
 
 \func and-false (x : Bool) : x and false = false
   | false => idp
@@ -46,18 +60,12 @@
   | true  => idp
 
 \func preorder-is-category {A : \Type} (pr : Preorder' A) : Category A \cowith
-  | Hom => \lam source target => Bool
-  | comp => and
-  | id => true
-  | comp-id-left => idp
-  | comp-id-right {x} {y} {f} => \case f \as g, idp : g = f \with {
-    | false, q => rewriteI q idp
-    | true , q => rewriteI q idp
-  }
-  | comp-assoc {x} {y} {z} {w} {f} {g} {h} => \case f \as f', idp : f' = f \with {
-    | false, p => rewriteI p $ rewrite and-false $ rewrite and-false $ rewrite and-false idp
-    | true , p => rewriteI p $ rewrite and-true $ rewrite and-true idp
-  }
+  | Hom => <==
+  | comp => \lam g f => leq-trans f g
+  | id => leq-refl
+  | comp-id-left {_} {_} {f} => inv $ leq-id-left f
+  | comp-id-right => {?}
+  | comp-assoc => {?}
 
 \instance NatLECat : Category Nat => preorder-is-category NatLE'
 
@@ -102,7 +110,7 @@
 
 \class NaturalTransformation {C D : Category} (F G : Functor C D) {
   | component : \Pi (x : C.Ob) -> Hom (F x) (G x)
-  | naturality : \Pi (x y : C.Ob) (f : Hom x y) -> component y ∘ fmap f = fmap f ∘ component x
+  | naturality : \Pi (x y : C.Ob) (f : Hom {C} x y) -> component y ∘ fmap f = fmap f ∘ component x
 }
 
 -- C = two parallel arrows between objects s t
@@ -113,7 +121,7 @@
   | Hom => NaturalTransformation
   | comp => \lam alpha beta => \new NaturalTransformation {
     | component  => \lam t => (component {alpha} t) ∘ (component {beta} t)
-    | naturality => {?}
+    | naturality => \lam x y f => rewriteI comp-assoc $ {?}
   }
   | id => \new NaturalTransformation {
     | component => \lam t => id
@@ -140,3 +148,12 @@
   | fmap => {?}
   | id-proof => {?}
   | comp-proof => {?}
+
+\instance yo {C : Category} : Functor C (PreSheaf C)
+  | omap => {?}
+  | fmap => {?}
+  | id-proof => {?}
+  | comp-proof => {?}
+
+-- Yoneda : forall a in C. Nat(y a, F) = F a
+-- natural in a

@@ -1,0 +1,22 @@
+\import Category
+\import Category.Functor
+\import Function.Meta
+\import Paths.Meta
+\import Set.Category
+
+\func PreSheafCat (C : Precat) : Cat
+  => FunctorCat {opP C} {SetCat}
+
+\func OpHomFunctor {C : Precat} (a : C.Ob) : Functor (opP C) SetCat \cowith
+  | F x => Hom x a
+  | Func f => \lam z => Precat.o z f
+  | Func-id => ext (\lam h => rewrite id-right $ rewriteI id-left idp)
+  | Func-o => \lam g f => ext (\lam h => rewrite o-assoc idp)
+
+\func yo {C : Precat} : Functor C (PreSheafCat C) \cowith
+  | F x => OpHomFunctor x
+  | Func f => {?}
+  | Func-id => {?}
+  | Func-o => {?}
+
+\func yoneda {C : Precat} {x : PreSheafCat C} : \Pi (c : C) -> Hom (yo.F c) x = Functor.F {x} c => {?}
