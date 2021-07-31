@@ -30,11 +30,17 @@
 \func yoneda2 {C : Cat} {W : PreSheafCat C} (c : C) (f : W c) : Hom (yo.F c) W
   => \new NatTrans {
     | trans => unfold (\lam d => unfold (\lam zz => Func {W} zz f))
-    | natural => \lam g => ext (\lam f1 =>
-        repeat {2} unfold $
-        repeat {2} (unfold at f1) $
-        unfold at W $
-        unfold $
-        unfold at g $
-        {?})
+    | natural g => repeat {2} unfold $ ext (\lam h => rewrite (Func-o {W}) idp)
   }
+
+\func yoneda<> {C : Cat} {W : PreSheafCat C} (c : C) (w : Hom (yo.F c) W) : yoneda2 c (yoneda1 c w) = w =>
+  unfold yoneda1 $ exts (\lam W => unfold $ ext (\lam f => unfold at w $
+      (\let
+        | zz => (NatTrans.natural {w} f)
+       \in
+        --   rewrite zz $
+        {?})))
+
+\func yoneda>< {C : Cat} {W : PreSheafCat C} (c : C) (f : W c) : yoneda1 c (yoneda2 c f) = f =>
+  unfold yoneda1 $ unfold $ rewrite (Func-id {W}) idp
+
