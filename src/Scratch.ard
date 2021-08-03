@@ -1,0 +1,40 @@
+\import Arith.Int
+\import Data.Bool
+\import Data.Or
+\import Logic
+\import Logic.Meta
+\import Meta
+\import Paths.Meta
+\import Relation.Equivalence
+\open Nat \hiding (*)
+
+\func foo (x : Nat) => x
+
+\func sum_of_squares (x : Nat) (y : Nat) => x
+
+\func baz (n m : Nat) : Nat \elim m
+  | 0 => foo n
+  | suc m => baz n m
+
+\func sep {A : \Type} (B : A -> \Type) : \Type
+  => \Sigma  (x : A) (B x)
+
+\func isInj {A B : \Type} (f : A -> B)
+  => \Pi {a a' : A} -> f a = f a' -> a = a'
+
+\func sep-inj {A : \Type} (B : A -> \Type)
+              (q : \Pi (x : A) -> \Pi (b b' : B x) -> b = b')
+  : isInj ((\lam (p : \Sigma (x : A) (B x)) => p.1) : sep {A} B -> A)
+  => unfold isInj (\lam {a} {a'} p => ext (p, q _ _ _))
+
+\func isProp (X : \Type) => \Pi (x x' : X) -> x = x'
+
+-- | Propositional trancation
+\truncated \data Trunc (A : \Type) : \Prop
+  | trunc A
+
+\lemma Trunc-rec {A B : \Type} (p : isProp B) (f : A -> B) (t : Trunc A) : B \elim t
+  | trunc a => f a
+
+\lemma Trunc-rec' {A : \Type} (B : \Prop) (f : A -> B) (t : Trunc A) : B \elim t
+  | trunc a => f a

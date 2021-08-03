@@ -1,0 +1,50 @@
+\import Algebra.Meta
+\import Category
+\import Category.Functor
+\import Equiv (Equiv)
+\import Function.Meta
+\import Meta
+\import Paths
+\import Paths.Meta
+\import Set.Category
+
+\func PreSheafCat (C : Cat) : Cat
+  => FunctorCat {opP C} {SetCat}
+
+\func OpHomFunctor {C : Cat} (a : C.Ob) : Functor (opP C) SetCat \cowith
+  | F x => Hom x a
+  | Func f => __ ∘ f
+  | Func-id => exts (\lam f' => id-right)
+  | Func-o g f => exts (\lam h => o-assoc {opP C})
+
+-- | Yoneda embedding
+\func yo {C : Cat} : Functor C (PreSheafCat C) \cowith
+  | F x => OpHomFunctor x
+  | Func f => \new NatTrans {
+    | trans X => f ∘ __
+    | natural f' => ext (\lam f'' => inv o-assoc)
+  }
+  | Func-id => exts (\lam X' => ext (\lam f'' => id-left))
+  | Func-o g f => exts (\lam X' => ext (\lam h => o-assoc))
+
+\func yonedaTo {C : Cat} {W : PreSheafCat C} {c : C} (w : Hom (yo.F c) W) : W c
+  => w c $ id c
+
+\func yonedaFrom {C : Cat} {W : PreSheafCat C} {c : C} (f : W c) : Hom (yo.F c) W
+  => \new NatTrans {
+    | trans x => Func {W} __ f
+    | natural f' => exts (\lam f'' => repeat {2} unfold $ rewrite (Func-o {W}) idp)
+  }
+
+\func yoneda>< {C : Cat} {W : PreSheafCat C} {c : C} (f : W c) : yonedaTo (yonedaFrom f) = f
+  => unfold yonedaTo $ unfold $ rewrite (Func-id {W}) idp
+
+\func yoneda<> {C : Cat} {W : PreSheafCat C} {c : C} (w : Hom (yo.F c) W) : yonedaFrom (yonedaTo w) = w
+  => exts (\lam Y => ext (\lam f => pmap (__ (id c)) (inv $ natural {w} f) *> rewrite id-left idp))
+
+\func YonedaLemma {C : Cat} {W : PreSheafCat C} {c : C} : Equiv yonedaTo (yonedaFrom {C} {W} {c})
+  => \new Equiv {
+    | sec   => yonedaFrom
+    | ret_f => yoneda<>
+    | f_sec => yoneda><
+}
