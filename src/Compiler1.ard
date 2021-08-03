@@ -1,0 +1,65 @@
+\import Data.List
+\import Function.Meta
+\import Paths.Meta
+\import Meta (run \as runMeta)
+\open Nat
+
+\func monus (m n : Nat) : Nat \elim m, n
+  | m    , 0     => m
+  | 0    , _     => 0
+  | suc m, suc n => monus m n
+
+\data BinOpTag
+  | Add
+  | Sub
+  | Mul
+
+\func tagToArith (t : BinOpTag) : (Nat -> Nat -> Nat)
+  | Add => +
+  | Sub => monus
+  | Mul => *
+
+\data Exp
+  | ENum (n : Nat)
+  | EBinOp (t : BinOpTag) (e1 e2 : Exp)
+
+\func eval (e : Exp) : Nat \elim e
+  | ENum n         => n
+  | EBinOp t e1 e2 => tagToArith t (eval e1) (eval e2)
+
+\data Instr
+  | IPush  (n : Nat)
+  | IBinOp (t : BinOpTag)
+
+\func Stack   => List Nat
+\func Program => List Instr
+
+\func compile (e : Exp) : Program \elim e
+  | ENum n         => IPush n :: nil
+  | EBinOp t e1 e2 => compile e1 ++ compile e2 ++ IBinOp t :: nil
+
+\func run (p : Program) (s : Stack): Stack \elim p,s
+  | :: (IPush  n) p, s               => run p $ n :: s
+  | :: (IBinOp t) p, (:: x (:: y s)) => run p $ tagToArith t y x :: s
+  | nil            , s               => s
+  | :: _ p         , s               => run p s
+
+\func run_cat (p1 p2 : Program) (s : Stack) : run p2 (run p1 s) = run (p1 ++ p2) s \elim p1
+  | nil             => idp
+  | :: (IPush  _) _ => run_cat _ _ _
+  | :: (IBinOp t) p => \case \elim s \with {
+    | nil           => run_cat _ _ _
+    | :: _ nil      => run_cat _ _ _
+    | :: _ (:: _ _) => run_cat _ _ _
+  }
+
+\func compile_correct_any_stack  (e : Exp) {s : Stack} : run (compile e) s = eval e :: s \elim e
+  | ENum n         => idp
+  | EBinOp t e1 e2 => runMeta {
+    repeat {2} $ rewriteI run_cat,
+    repeat {2} $ rewrite compile_correct_any_stack,
+    idp
+  }
+
+\func compile_correct (e : Exp) : run (compile e) nil = eval e :: nil
+  => compile_correct_any_stack _
