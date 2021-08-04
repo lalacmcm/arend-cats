@@ -40,7 +40,7 @@
   => unfold yonedaTo $ unfold $ rewrite (Func-id {W}) idp
 
 \func yoneda<> {C : Cat} {W : PreSheafCat C} {c : C} (w : Hom (yo.F c) W) : yonedaFrom (yonedaTo w) = w
-  => exts (\lam Y => ext (\lam f => pmap (__ (id c)) (inv $ natural {w} f) *> rewrite id-left idp))
+  => exts (\lam Y => ext (\lam f => pmap (__ (id c)) (inv $ natural {w} f) *> pmap (w Y __) (repeat {2} unfold $ rewrite id-left idp)))
 
 \func YonedaLemma {C : Cat} {W : PreSheafCat C} {c : C} : Equiv yonedaTo (yonedaFrom {C} {W} {c})
   => \new Equiv {
